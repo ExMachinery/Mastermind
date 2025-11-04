@@ -1,7 +1,7 @@
 # Объект игрок: Имя, Угадывание: личный счёт побед/поражений, Роль: Угадывающий/Загадывающий
 
 class Player
-  attr_accessor :name, :role, :guesser_score
+  attr_accessor :name, :role, :current_code, :guesser_score
 
   def initialize
     self.guesser_score = {
@@ -10,12 +10,14 @@ class Player
     }
     puts "What is your name?"
     self.name = gets.chomp
-    # Role picker logic here for Phase 2. 0 - guesser, 1 - thinker
-    self.role = 0
   end
 
   def alter_score(result)
     # Take result and write to @guesser_score here
+  end
+
+  def human_code?
+    self.current_code
   end
 
 

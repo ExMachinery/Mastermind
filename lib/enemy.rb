@@ -7,7 +7,7 @@ class Enemy
   def initialize(role)
     @role = role
     @prng = Random.new
-    if role == thinker
+    if role == 1
       @currend_code = prng.rand(10000)
     end
   end
