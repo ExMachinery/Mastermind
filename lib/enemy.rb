@@ -1,18 +1,17 @@
 # Объект противник: Роль: Угадывающий/Загадывающий, Генерация и хранение кода.
  
 class Enemy
-  attr_accessor :role, :prng
-  @current_code = nil
+  attr_accessor :role, :prng, :code
 
   def initialize(role)
-    @role = role
-    @prng = Random.new
+    self.role = role
+    self.prng = Random.new
     if role == 1
-      @currend_code = prng.rand(10000)
+      self.code = prng.rand(10000)
     end
   end
 
-  def code?
-    @current_code
-  end
+  # def code?
+  #   code
+  # end
 end
