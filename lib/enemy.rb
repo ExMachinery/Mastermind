@@ -3,15 +3,16 @@
 class Enemy
   attr_accessor :role, :prng, :code
 
-  def initialize(role)
-    self.role = role
+  def initialize
     self.prng = Random.new
-    if role == 1
+  end
+
+  def generate_code
+    self.code = 0
+    until code.to_s.match?(/^\d{4}$/)
       self.code = prng.rand(10000)
     end
   end
 
-  # def code?
-  #   code
-  # end
+
 end
