@@ -6,7 +6,6 @@ class Game
   attr_accessor :player, :enemy
 
   def initialize
-    # Something to initialize
     @turn_num = 0
     self.player = Player.new
     self.enemy = Enemy.new
@@ -14,9 +13,27 @@ class Game
 
   def start_game
     # Rolepicker logic here (only guesser for now)
-    puts "Hi, #{player.name}! For now we have only guessing game. Enjoy!"
-    self.player.role = 0
-    self.enemy.role = 1
+    puts "Hi, #{player.name}! Input '1' for Guessing, '2' for Thinking"
+    valid = false
+    until valid
+      player_game_choice = gets.chomp
+      if player_game_choice == "1"
+        valid = true
+        self.player.role = 0
+        self.enemy.role = 1
+        game_sequence
+      elsif player_game_choice == "2"
+        valid = true
+        self.player.role = 1
+        self.enemy.role = 0
+        game_sequence
+      else
+        puts "Incorrect input! Input '1' for Guessing, '2' for Thinking"
+      end
+    end
+  end
+  
+  def game_sequence
     round(player.role)
     one_more = true
     while one_more
@@ -34,12 +51,12 @@ class Game
   end
 
   def round(player_role)
+    # Player-guesser logic
     round_counter = 0
     if player_role == 0
       result = false
       enemy.generate_code
       puts "You have to guess a 4 digit number. Good luck, bro!"
-      p "Testing: #{enemy.code}"
       code = enemy.code.to_s.split("")
       until result || (round_counter == 12) do
         round_counter += 1
@@ -51,6 +68,20 @@ class Game
         puts "Time's up! You loose! Have a luck next time!"
       else
         puts "YAHOOO! You did it, boyo!"
+      end
+
+    # Player-thinker logic  
+    elsif player_role == 1
+      result = false
+      until result do
+        player_think_of_code
+        result = enemy.think_engine(player.code)
+      end
+
+      if result == 1
+        puts "Haha! Got you!"
+      else
+        puts "I was close! But your code is too good!"
       end
     end
   end
@@ -81,11 +112,6 @@ class Game
       puts "CORRECT: #{hint.count(true)} | So close: #{hint.count(false)}. Try again!"
       return false
     end
-  end
-
-
-  def think_engine
-    # Here is a code, if player = thinker
   end
 
   def human_guess?
