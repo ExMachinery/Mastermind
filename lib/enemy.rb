@@ -13,6 +13,9 @@ class Enemy
     @switched_element = 0
     @for_switch = 1
     @full = false
+
+    @test_attempt = 1
+    puts "Enemy initialized."
   end
 
   def generate_code
@@ -20,6 +23,7 @@ class Enemy
     until code.to_s.match?(/^\d{4}$/)
       self.code = prng.rand(10000)
     end
+    puts "Code generated."
   end
 
   def think_engine(player_code)
@@ -34,10 +38,11 @@ class Enemy
     # @for_switch = 1
     # @full = false
     
+    puts "Enemy think engine started."
     round_counter = 0
     code_picked = nil
     hint = [nil]
-    until round_counter == 12 || code_picked
+    until round_counter == 20 || code_picked
       round_counter += 1
       attempt = process_attempt(hint)
       hint = break_attempt(player_code, attempt)
@@ -49,13 +54,23 @@ class Enemy
   end
 
   def process_attempt(hint)
-    # p @work_array
-    # p @pending_attempt
+    puts "-----------------------------------"
+    puts "Process attempt #{@test_attempt}"
+    @test_attempt += 1
+
     hint_sum = hint.count(true) + hint.count(false)
-    if hint_sum == 4
-      puts "================================="
+    if hint_sum == 4 && @full == false
       @full = true
-      @work_array = @pending_attempt
+      complite_array = []
+      @work_array.each do |num|
+        if num == nil
+          complite_array << @background - 1
+        else
+          complite_array << num
+        end
+      end
+      @work_array = complite_array
+      @pending_attempt = complite_array
     end
 
     if (hint.count(true) < @hint_true_previous) && @full == false
@@ -98,15 +113,23 @@ class Enemy
       end
 
       if hint.count(true) <= @hint_true_previous
-        attempt = @work_array
+        puts "START CON1: TRUE IS LESS OR EQUAL"
+        puts "RECEIVING. WORK: #{@work_array}"
+        attempt = @work_array.dup
+        puts "Replacing element: #{@switched_element} with #{@switched_element + @for_switch}"
         switcher!(attempt)
         @for_switch += 1
+        puts "RETURN: #{attempt}"
       elsif hint.count(true) > @hint_true_previous
-        attempt = @pending_attempt
-        @work_array = @pending_attempt
-        @for_switch = 1
-        @switched_element += 1
+        puts "START CON2: TRUE IS MORE"
+        puts "RECEIVING. WORK: #{@work_array}, PENDING: #{@pending_attempt}"
+        @work_array = @pending_attempt.dup # Перезапись рабочей версии удачной попыткой.
+        attempt = @work_array.dup # Подготовка новой попытки
+        @for_switch = 1 # Сброс индекаса относительности на 1.
+        @switched_element += 1 # перемещение следующего элемента.
+        puts "Replacing element: #{@switched_element} with #{@switched_element + @for_switch}"
         switcher!(attempt)
+        puts "RETURN. WORK: #{@work_array}, TRY: #{attempt}"
       end
     end
 
@@ -114,7 +137,15 @@ class Enemy
     @hint_sum_previous = hint_sum
     @hint_true_previous = hint.count(true)
     puts "Maybe this: #{attempt.join}?"
-    @pending_attempt = attempt
+    if @full == true
+      @pending_attempt = attempt.dup
+    end
+    puts "================="
+    puts "####CHECKER######"
+    p @pending_attempt
+    p @work_array
+    puts "================="
+    
     attempt.map! { |x| x.to_s}
     attempt
 
@@ -122,6 +153,7 @@ class Enemy
 
   # Swaps first non-nil element with nil on the right (if such nil exsist)
   def swapper!(array)
+    puts "Use swapper."
     swap = (0...(array.size - 1)).find { |index| !array[index].nil? && array[index + 1].nil? }
     if swap
       array[swap], array[swap+1] = array[swap+1], array[swap]
@@ -129,10 +161,18 @@ class Enemy
   end
     
   def switcher!(array)
+    puts "========================="
+    puts "Use switcher."
+    puts "Receive #{array}"
+
     array[@switched_element], array[@switched_element + @for_switch] = array[@switched_element + @for_switch], array[@switched_element]
+
+    puts "Return #{array}"
+    puts "#######SWITCHER END######"
   end
     
   def break_attempt(player_code, attempt)
+    puts "Run break attempt."
     hint = []
     player_code.each_with_index do |code_num, code_index|
       if attempt.include?(code_num)
