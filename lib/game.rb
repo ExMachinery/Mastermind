@@ -72,13 +72,10 @@ class Game
 
     # Player-thinker logic  
     elsif player_role == 1
-      result = false
-      until result do
-        player_think_of_code
-        result = enemy.think_engine(player.code)
-      end
+      player.player_think_of_code
+      result = enemy.think_engine(player.code)
 
-      if result == 1
+      if result == true
         puts "Haha! Got you!"
       else
         puts "I was close! But your code is too good!"
