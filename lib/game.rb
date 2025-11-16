@@ -88,16 +88,10 @@ class Game
     hint = []
     code.each_with_index do |code_num, code_index|
       if guess.include?(code_num)
-        guess.each_with_index do |guess_num, guess_index|
-          if guess_num == code_num && guess_index == code_index
-            hint << true
-            guess.fill(nil, guess_index, 1)
-            break
-          elsif guess_num == code_num && guess_index != code_index
-            hint << false
-            guess.fill(nil, guess_index, 1)
-            break
-          end
+        if code_num == guess[code_index]
+          hint << true
+        else
+          hint << false
         end
       else
         hint << nil
