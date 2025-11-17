@@ -50,7 +50,7 @@ class Enemy
     @work_array = [nil, nil, nil, nil]
     @pending_attempt = []
     @full = false
-    @locked = [nil, nil, nil, nil]
+    @locked = [false, nil, nil, nil]
     @alpha = false
     @betta = false
     @deep_think = false
@@ -58,24 +58,18 @@ class Enemy
 
   def process_attempt(hint)
     hint_sum = hint.count(true) + hint.count(false)
-    direct_hit = nil
     if hint_sum == 4 && @full == false
       @full = true
       complite_array = []
       @work_array.each_with_index do |num, ind|
         if num == nil
           complite_array << @background - 1
-          direct_hit = ind
         else
           complite_array << num
         end
       end
       @work_array = complite_array.dup
-      @pending_attempt = complite_array.dup
-      if hint.count(true) > @past_true
-        @locked[direct_hit] = true
-      end
-      @past_true = hint.count(true)
+      @scenario = hint.count(true)
     end
 
     if (hint.count(true) < @past_true) && @full == false
@@ -112,14 +106,7 @@ class Enemy
         end
       end
     elsif @full
-      if !@deep_think
-        attempt = @work_array.dup
-        index_carrier
-        attempt[@alpha], attempt[@betta] = attempt[@betta], attempt[@alpha]
-        @deep_think = true
-      else
         attempt = new_logic(hint)
-      end
     end
 
     if !@full
@@ -144,10 +131,6 @@ class Enemy
     end
   end
     
-  # def switcher!(array)
-  #   array[@switched_element], array[@switched_element + @for_switch] = array[@switched_element + @for_switch], array[@switched_element]
-  # end
-    
   def break_attempt(player_code, attempt)
     hint = []
     player_code.each_with_index do |code_num, code_index|
@@ -166,75 +149,107 @@ class Enemy
     hint
   end
 
+  @scenario = nil
+  @deep_think_step = 0
+  @possible1 = []
+  @possible2 = []
+  @next_possibilitie = false
+  @next_try = false
   def new_logic(hint)
-    puts "======================================="
-    attempt = []
-    skip = false
-    if @past_true >= hint.count(true)
-      puts "NEW_LOGIC. T.p >= T.c, hint: #{hint}"
-      if @past_true - hint.count(true) == 2 && @alpha && @betta
-        @locked[@alpha], @locked[@betta] = true, true
-        skip = true
-      end
-      attempt = @work_array.dup
-      if !@locked.include?(false) && !skip
-        @locked[@alpha] = 0
-        @locked[@betta] = false
-      elsif @locked.include?(false) && !skip
-        @locked[@betta] = 0
-      end
-      puts "Current locked: #{@locked}"
-      index_carrier
-    elsif @past_true < hint.count(true)
-      puts "NEW_LOGIC. T.p < T.c, hint: #{hint}"
-      @work_array = @pending_attempt.dup
-      attempt = @work_array.dup
-      @locked[@betta] = true
-      @locked[@alpha] = false
-      @locked.each_with_index do |val, ind|
-        if val == 0
-          @locked[ind] = nil
+    attempt = @work_array
+    if @scenario == 0
+      puts "####== SCENARIO_0 ==####"
+        if @deep_think_step == 0
+          index_carrier(nil, nil)
+          @deep_think_step += 1
+        elsif @deep_think_step == 1 && hint.count(true) == 2 && @next_try == false # Solved
+          @locked = [true, true, nil, nil]
+          index_carrier(nil, nil)
+        elsif @deep_think_step == 1 && hint.count(true) == 1 || @next_try == true
+          @possible1 = [true, false, nil, nil]
+          @possible2 = [false, true, nil, nil]
+          if !@next_try
+            @locked = @possible1.dup
+          else
+            @locked = @possible2.dup
+            @next_possibilitie = false
+          end
+          index_carrier(false, nil)
+          @deep_think_step += 1
+        elsif (@deep_think_step == 2 && hint.count(true) == 2) || @next_possibilitie == true
+          if !@next_try
+            @possible1 = [true, true, nil, nil]
+            @possible2 = [true, nil, true, nil]
+          else
+            @possible1 = [true, true, nil, nil]
+            @possible2 = [nil, true, true, nil]
+          end
+          if !@next_possibilitie
+            @locked = @possible1.dup
+            @next_possibilitie = true
+          else
+            @locked = @possible2.dup
+          end
+          index_carrier(nil, nil)
+        elsif @deep_think_step == 2 && hint.count(true) < 2
+          if !@next_try
+            @locked = [true, nil, nil, true]
+          else
+            @locked = [nil, true, nil, true]
+            puts "I'm fucking out of suggestions..."
+          end
+          index_carrier(nil, nil)
+          @next_try = true
+          @deep_think_step -= 1
         end
+      attempt[@alpha], attempt[@betta] = attempt[@betta], attempt[@alpha]
+      puts "####================####"
+    elsif @scenario == 1
+      puts "####== SCENARIO_1 ==####"
+      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      # HERE HERE HERE HERE HERE HERE
+      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      puts "####================####"
+    elsif @scenario == 2
+      puts "####== SCENARIO_2 ==####"
+      if @deep_think_step < 3 && hint.count(true) > 0
+        @alpha, @betta = false, false
+        @locked.each_with_index do |val, ind|
+          if val == nil && !@betta
+            @locked[ind] = 0
+            @betta = ind
+          elsif val == false && !@alpha
+            @alpha = ind
+          end
+        end
+        @deep_think_step += 1
+      elsif @deep_think_step < 3 && hint.count(true) == 0 # Solved
+        @locked[@alpha], @locked[@betta] = true, true
+        @alpha, @betta = false, false
+        @locked.each_with_index do |val, ind|
+          if val != true && !@alpha
+            @alpha = ind
+          elsif val != true && !@betta
+            @betta = ind
+          end
+        end
+      elsif @deep_think_step == 3 && hint.count(true) == 0 # Solved
+        @locked = [true, nil, nil, true]
+        index_carrier(nil, nil)
       end
-      puts "Current locked: #{@locked}"
-      index_carrier
-      @past_true = hint.count(true)
-    else
-      puts "Вариант равенства существует!!!!"
+      attempt[@alpha], attempt[@betta] = attempt[@betta], attempt[@alpha]
+      puts "####================####"
     end
-    attempt[@alpha], attempt[@betta] = attempt[@betta], attempt[@alpha]
-    puts "Send attempt: #{@work_array} => #{attempt}"
-    attempt
   end
 
-  def index_carrier
+  def index_carrier(a, b)
     puts "INDEX CARRIER. #{@locked}"
     @alpha, @betta = false, false
-    if !@locked.include?(nil)
-      @locked.each_with_index do |val, ind|
-        if val == 0 || val == false
-          @locked[ind] = nil
-        end
-      end
-      i = @locked.find_index {|val| val == nil }
-      @locked[i] = false
-    end
-
-    if @locked.include?(false)
-      @locked.each_with_index do |val, ind|
-        if val == false
-          @alpha = ind
-        elsif val == nil && !@betta
-          @betta = ind
-        end
-      end
-    else
-      @locked.each_with_index do |val, ind|
-        if val == nil && !@alpha
-          @alpha = ind
-        elsif val == nil || val == 0 && !@betta
-          @betta = ind
-        end
+    @locked.each_with_index do |val, ind|
+      if val == a && !@alpha
+        @alpha = ind
+      elsif val == b && !@betta
+        @betta = ind
       end
     end
     puts "INDEX CARRIER. #{@alpha}, #{@betta}"
@@ -242,39 +257,3 @@ class Enemy
 end
 
 
-  # def new_logic(hint)
-  #   puts "======================================="
-  #   attempt = []
-  #   skip = false
-  #   if @past_true = hint.count(true)
-  #     puts "NEW_LOGIC. T.p >= T.c, hint: #{hint}"
-  #     if @past_true - hint.count(true) == 2 && @alpha && @betta
-  #       @locked[@alpha], @locked[@betta] = true, true
-  #       skip = true
-  #     end  
-  #     attempt = @work_array.dup
-  #     @locked[@betta] = 0 if !skip && @betta
-  #     puts "Current locked: #{@locked}"
-  #     index_carrier
-  #   elsif @past_true < hint.count(true)
-  #     puts "NEW_LOGIC. T.p < T.c, hint: #{hint}"
-  #     @locked.each_with_index do |value, ind|
-  #       if value == 0
-  #         @locked[ind] = nil
-  #       end
-  #     end
-
-  #     if hint.count(true) - @past_true == 2 && @alpha && @betta
-  #       @locked[@alpha], @locked[@betta] = true, true
-  #     else
-  #       @locked[@betta] = false
-  #     end
-  #     @work_array = @pending_attempt.dup
-  #     attempt = @work_array.dup
-  #     puts "Current locked: #{@locked}"
-  #     index_carrier
-  #   end
-  #   attempt[@alpha], attempt[@betta] = attempt[@betta], attempt[@alpha]
-  #   puts "Send attempt: #{@work_array} => #{attempt}"
-  #   attempt
-  # end
