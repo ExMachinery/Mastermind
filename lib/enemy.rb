@@ -10,11 +10,18 @@ class Enemy
     @background = 0
     @work_array = [nil, nil, nil, nil]
     @pending_attempt = []
-    @locked = [nil, nil, nil, nil]
+    @locked = [false, nil, nil, nil]
     @alpha = false
     @betta = false
     @full = false
     @deep_think = false
+    @scenario = nil
+    @deep_think_step = 0
+    @possible1 = []
+    @possible2 = []
+    @next_possibilitie = false
+    @next_try = false
+    @notrue_counter = 1
   end
 
   def generate_code
@@ -54,6 +61,13 @@ class Enemy
     @alpha = false
     @betta = false
     @deep_think = false
+    @scenario = nil
+    @deep_think_step = 0
+    @possible1 = []
+    @possible2 = []
+    @next_possibilitie = false
+    @next_try = false
+    @notrue_counter = 1
   end
 
   def process_attempt(hint)
@@ -149,18 +163,13 @@ class Enemy
     hint
   end
 
-  @scenario = nil
-  @deep_think_step = 0
-  @possible1 = []
-  @possible2 = []
-  @next_possibilitie = false
-  @next_try = false
+
   def new_logic(hint)
-    attempt = @work_array
+    attempt = @work_array.dup
     if @scenario == 0
       puts "####== SCENARIO_0 ==####"
         if @deep_think_step == 0
-          index_carrier(nil, nil)
+          index_carrier(false, nil)
           @deep_think_step += 1
         elsif @deep_think_step == 1 && hint.count(true) == 2 && @next_try == false # Solved
           @locked = [true, true, nil, nil]
@@ -206,9 +215,124 @@ class Enemy
       puts "####================####"
     elsif @scenario == 1
       puts "####== SCENARIO_1 ==####"
-      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      # HERE HERE HERE HERE HERE HERE
-      # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      skip = false
+      if @deep_think_step == 0
+        puts "STEP NULL!"
+        index_carrier(false, nil)
+        @locked[@betta] = 0
+        @deep_think_step += 1
+        @possible1 = [nil, nil, nil, nil]
+        @possible2 = [nil, nil, nil, nil]
+        skip = true
+      end
+      
+      if @locked.include?(nil) && @deep_think_step == 1 && skip == false
+        puts "STEP 1. Include NIL."
+        if hint.count(true) == 0
+          puts "STEP 1. HINT.TRUE == 0"
+          @notrue_counter += 1
+          index_carrier(false, nil)
+          @locked[@betta] = 0
+          if @notrue_counter == 3
+            @deep_think_step += 1
+            @locked = [true, false, nil, nil]
+            @next_possibilitie = @locked.dup
+          end
+        elsif hint.count(true) == 2
+          puts "STEP 1. HINT.TRUE == 2"
+          @work_array = @pending_attempt.dup
+          attempt = @work_array.dup
+          @locked[@alpha] = true
+          @locked[@betta] = false
+          @locked.each_with_index do |val, ind|
+            if val != true && val != false
+              @locked[ind] = nil
+            end
+          end
+          @alpha, @betta = false, false
+
+          @locked.each_with_index do |val, ind|
+            if val == true
+              @possible1[ind] = nil
+              @possible2[ind] = nil
+            elsif val == nil && !@alpha
+              if !@betta
+                @possible1[ind] = true
+                @possible2[ind] = nil
+                @betta = true
+              else
+                @possible2[ind] = true
+                @possible1[ind] = nil
+                @alpha = true
+              end
+            elsif val == false
+              @possible1[ind] = false
+              @possible2[ind] = false
+            end
+          end
+        @next_possibilitie = @locked.dup
+        @locked = @possible1.dup
+        index_carrier(nil, nil)
+        @deep_think_step += 1
+        @next_try = true
+        skip = true
+        end
+      end
+
+      if @deep_think_step == 2 && @notrue_counter == 3 && skip == false
+        puts "STEP 2. 3 NO.TRUE IN A ROW."
+        if @locked.include?(nil)
+          puts "STEP 2. LOCKED INCLUDE NIL"
+          index_carrier(false, nil)
+          swap = @locked.find_index {|val| val == false}
+          @locked[swap], @locked[swap + 1] = @locked[swap + 1], @locked[swap]
+          @locked[swap] = 0
+        else
+          puts "STEP 2. NOTHING WORKS."
+          @locked = @next_possibilitie.dup
+          index_carrier(nil, nil)
+          puts "I have no more fucking suggestions"
+        end
+      elsif @deep_think_step == 2 && @next_try == true && skip == false
+        puts "STEP 2. IF GOT 2 TRUE. "
+        @locked = @possible2.dup
+        index_carrier(nil, nil)
+        @deep_think_step += 1
+      elsif @deep_think_step == 3
+        puts "STEP 3. IF GOT 2 TRUE"
+        @locked = @next_possibilitie.dup
+        @alpha, @betta = false, false
+
+        @locked.each_with_index do |val, ind|
+          if val == false
+            @possible1[ind] = nil
+            @possible2[ind] = nil
+          elsif val == nil && !@alpha
+            if !@betta
+              @possible1[ind] = false
+              @possible2[ind] = nil
+              @betta = true
+            else
+              @possible2[ind] = false
+              @possible1[ind] = nil
+              @alpha = true
+            end
+          elsif val == true
+            @possible1[ind] = true
+            @possible2[ind] = true
+          end
+        end
+        @locked = @possible1.dup
+        index_carrier(nil, nil)
+        @deep_think_step += 1
+      elsif @deep_think_step == 4
+        puts "STEP 4. NOTHING LEFT."
+        @locked = @possible2.dup
+        index_carrier(nil, nil)
+        puts "No fucking clue..."
+      end
+
+      attempt[@alpha], attempt[@betta] = attempt[@betta], attempt[@alpha]
       puts "####================####"
     elsif @scenario == 2
       puts "####== SCENARIO_2 ==####"
@@ -238,8 +362,11 @@ class Enemy
         index_carrier(nil, nil)
       end
       attempt[@alpha], attempt[@betta] = attempt[@betta], attempt[@alpha]
+      p attempt
+      p @work_array  
       puts "####================####"
     end
+    attempt
   end
 
   def index_carrier(a, b)
